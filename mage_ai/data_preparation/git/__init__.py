@@ -83,7 +83,7 @@ class Git:
                 self.origin.set_url(self.remote_repo_link)
 
     @classmethod
-    def get_manager(self, user: User = None) -> 'Git':
+    def get_manager(cls, user: User = None) -> 'Git':
         preferences = get_preferences(user=user)
         git_config = None
         if preferences and preferences.sync_config:
@@ -105,8 +105,7 @@ class Git:
         self.repo.remotes[name].remove(self.repo, name)
 
     def staged_files(self) -> List[str]:
-        files_string = self.repo.git.diff('--name-only', '--cached')
-        if files_string:
+        if files_string := self.repo.git.diff('--name-only', '--cached'):
             return files_string.split('\n')
         return []
 
@@ -231,7 +230,7 @@ class Git:
 
         self.set_origin(remote_name)
         remote = self.repo.remotes[remote_name]
-        if branch_name and len(branch_name) >= 1:
+        if branch_name:
             try:
                 remote.pull(branch_name, custom_progress)
             except git.exc.GitCommandError as err:
@@ -315,25 +314,23 @@ class Git:
             if idx >= limit:
                 break
 
-            refs = []
-            for ref in remote.refs:
-                refs.append(dict(
+            refs = [
+                dict(
                     name=ref.name,
                     commit=dict(
                         author=dict(
                             email=ref.commit.author.email,
                             name=ref.commit.author.name,
                         ),
-                        date=datetime.fromtimestamp(ref.commit.authored_date).isoformat(),
+                        date=datetime.fromtimestamp(
+                            ref.commit.authored_date
+                        ).isoformat(),
                         message=ref.commit.message,
                     ),
-                ))
-
-            arr.append(dict(
-                name=remote.name,
-                refs=refs,
-                urls=[url for url in remote.urls],
-            ))
+                )
+                for ref in remote.refs
+            ]
+            arr.append(dict(name=remote.name, refs=refs, urls=list(remote.urls)))
 
         return arr
 
@@ -407,9 +404,9 @@ class Git:
             self.repo.working_dir, 'requirements.txt')
 
         with VerboseFunctionExec(
-            f'Running "pip3 install -r {requirements_file}"',
-            verbose=True,
-        ):
+                f'Running "pip3 install -r {requirements_file}"',
+                verbose=True,
+            ):
             try:
                 if os.path.exists(requirements_file):
                     cmd = f'pip3 install -r {requirements_file}'
@@ -417,13 +414,11 @@ class Git:
                 print(f'Installing {requirements_file} completed successfully.')
             except Exception as err:
                 print(f'Skip installing {requirements_file} due to error: {err}')
-                pass
 
     def __create_ssh_keys(self) -> str:
         if not os.path.exists(DEFAULT_SSH_KEY_DIRECTORY):
             os.mkdir(DEFAULT_SSH_KEY_DIRECTORY, 0o700)
-        pubk_secret_name = self.git_config.ssh_public_key_secret_name
-        if pubk_secret_name:
+        if pubk_secret_name := self.git_config.ssh_public_key_secret_name:
             public_key_file = os.path.join(
                 DEFAULT_SSH_KEY_DIRECTORY,
                 f'id_rsa_{pubk_secret_name}.pub'
@@ -512,8 +507,7 @@ class Git:
 
     def __add_host_to_known_hosts(self):
         url = f'ssh://{self.git_config.remote_repo_link}'
-        hostname = urlparse(url).hostname
-        if hostname:
+        if hostname := urlparse(url).hostname:
             cmd = f'ssh-keyscan -t rsa {hostname} >> {DEFAULT_KNOWN_HOSTS_FILE}'
             self._run_command(cmd)
             return True
