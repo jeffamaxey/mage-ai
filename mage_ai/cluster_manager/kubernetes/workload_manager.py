@@ -56,7 +56,7 @@ class WorkloadManager:
                 if not labels.get('dev-instance'):
                     continue
                 ip_address = service.status.load_balancer.ingress[0].ip
-                conditions = service.status.conditions or list()
+                conditions = service.status.conditions or []
                 services_list.append(dict(
                     ip=ip_address,
                     name=labels.get('app'),
@@ -77,7 +77,7 @@ class WorkloadManager:
         volume_host_path: str = None,
     ):
         if container_config is None:
-            container_config = dict()
+            container_config = {}
 
         env_vars = self.__populate_env_vars(container_config)
         container_config['env'] = env_vars
@@ -155,7 +155,7 @@ class WorkloadManager:
                     },
                 }
             )
-        deployment_template_spec = dict()
+        deployment_template_spec = {}
         if service_account_name:
             deployment_template_spec['serviceAccountName'] = service_account_name
 
@@ -199,7 +199,7 @@ class WorkloadManager:
         annotations = {}
         if os.getenv(KUBE_SERVICE_GCP_BACKEND_CONFIG):
             annotations[GCP_BACKEND_CONFIG_ANNOTATION] = \
-                os.getenv(KUBE_SERVICE_GCP_BACKEND_CONFIG)
+                    os.getenv(KUBE_SERVICE_GCP_BACKEND_CONFIG)
 
         service = {
             'apiVersion': 'v1',
@@ -231,8 +231,7 @@ class WorkloadManager:
     def __populate_env_vars(self, container_config) -> List:
         env_vars = []
 
-        connection_url_secrets_name = os.getenv(CONNECTION_URL_SECRETS_NAME)
-        if connection_url_secrets_name:
+        if connection_url_secrets_name := os.getenv(CONNECTION_URL_SECRETS_NAME):
             env_vars.append(
                 {
                     'name': DATABASE_CONNECTION_URL_ENV_VAR,
@@ -245,9 +244,7 @@ class WorkloadManager:
                 }
             )
 
-        # For connecting to CloudSQL PostgreSQL database.
-        db_secrets_name = os.getenv(DB_SECRETS_NAME)
-        if db_secrets_name:
+        if db_secrets_name := os.getenv(DB_SECRETS_NAME):
             env_vars.extend([
                 {
                     'name': DB_USER,

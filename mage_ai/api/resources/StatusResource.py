@@ -25,7 +25,7 @@ class StatusResource(GenericResource):
     """
     @classmethod
     @safe_db_query
-    def collection(self, query, meta, user, **kwargs):
+    def collection(cls, query, meta, user, **kwargs):
         from mage_ai.cluster_manager.constants import (
             ECS_CLUSTER_NAME,
             GCP_PROJECT_ID,
@@ -57,4 +57,4 @@ class StatusResource(GenericResource):
             'max_print_output_lines': MAX_PRINT_OUTPUT_LINES,
             'require_user_authentication': REQUIRE_USER_AUTHENTICATION,
         }
-        return self.build_result_set([status], user, **kwargs)
+        return cls.build_result_set([status], user, **kwargs)
